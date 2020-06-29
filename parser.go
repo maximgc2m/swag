@@ -584,7 +584,11 @@ func (parser *Parser) getTypeSchema(typeName string, file *ast.File, ref bool) (
 func (parser *Parser) getRefTypeSchema(typeSpecDef *TypeSpecDef, schema *Schema) *spec.Schema {
 	if _, ok := parser.OutputSchemas[typeSpecDef]; !ok {
 		if _, ok := parser.swagger.Definitions[schema.Name]; ok {
-			schema.Name = fullTypeName(schema.PkgPath, strings.Split(schema.Name, ".")[1])
+			fmt.Println(">>> schema.Name = ", schema.Name)
+			schemaNameParts := strings.Split(schema.Name, ".")
+			if len(schemaNameParts) > 1 {
+				schema.Name = fullTypeName(schema.PkgPath, strings.Split(schema.Name, ".")[1])
+			}
 			schema.Name = strings.ReplaceAll(schema.Name, "/", "_")
 		}
 		if schema.Schema != nil {
