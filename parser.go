@@ -584,7 +584,6 @@ func (parser *Parser) getTypeSchema(typeName string, file *ast.File, ref bool) (
 func (parser *Parser) getRefTypeSchema(typeSpecDef *TypeSpecDef, schema *Schema) *spec.Schema {
 	if _, ok := parser.OutputSchemas[typeSpecDef]; !ok {
 		if _, ok := parser.swagger.Definitions[schema.Name]; ok {
-			fmt.Println(">>> schema.Name = ", schema.Name)
 			schemaNameParts := strings.Split(schema.Name, ".")
 			if len(schemaNameParts) > 1 {
 				schema.Name = fullTypeName(schema.PkgPath, strings.Split(schema.Name, ".")[1])
@@ -639,6 +638,17 @@ func (parser *Parser) ParseDefinition(typeSpecDef *TypeSpecDef) (*Schema, error)
 	if err != nil {
 		return nil, err
 	}
+
+	for _, comment :=  range typeSpecDef.File.Comments{
+		commentString := comment.Text()
+		commentString = strings.TrimPrefix(commentString, "//")
+		commentString = strings.TrimSpace(commentString)
+		if strings.HasPrefix(commentString, refTypeName) ||  strings.HasPrefix(commentString, typeSpecDef.Name()){
+			schema.Description = commentString
+			break
+		}
+	}
+
 	s := &Schema{Name: refTypeName, PkgPath: typeSpecDef.PkgPath, Schema: schema}
 	parser.ParsedSchemas[typeSpecDef] = s
 
@@ -663,7 +673,9 @@ func (parser *Parser) parseTypeExpr(file *ast.File, typeExpr ast.Expr, ref bool)
 	switch expr := typeExpr.(type) {
 	// type Foo struct {...}
 	case *ast.StructType:
-		return parser.parseStruct(file, expr.Fields)
+		schema, err := parser.parseStruct(file, expr.Fields)
+		//schema.Description = typeExpr.
+		return schema, err
 
 	// type Foo Baz
 	case *ast.Ident:
