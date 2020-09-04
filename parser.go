@@ -639,11 +639,11 @@ func (parser *Parser) ParseDefinition(typeSpecDef *TypeSpecDef) (*Schema, error)
 		return nil, err
 	}
 
-	for _, comment :=  range typeSpecDef.File.Comments{
+	for _, comment := range typeSpecDef.File.Comments {
 		commentString := comment.Text()
 		commentString = strings.TrimPrefix(commentString, "//")
 		commentString = strings.TrimSpace(commentString)
-		if strings.HasPrefix(commentString, refTypeName) ||  strings.HasPrefix(commentString, typeSpecDef.Name()){
+		if strings.HasPrefix(commentString, refTypeName) || strings.HasPrefix(commentString, typeSpecDef.Name()) {
 			schema.Description = commentString
 			break
 		}
@@ -732,6 +732,18 @@ func (parser *Parser) parseStruct(file *ast.File, fields *ast.FieldList) (*spec.
 		}
 		required = append(required, requiredFromAnon...)
 		for k, v := range fieldProps {
+			// if $ref and description on the one level
+			// wrap $ref into AllOf to preserve description
+			if v.Ref.String() != "" && v.Description != "" {
+				subSchema := spec.Schema{
+					SchemaProps: spec.SchemaProps{
+						Ref: v.Ref,
+					},
+				}
+				v.AllOf = []spec.Schema{subSchema}
+				v.Ref = spec.Ref{}
+			}
+
 			properties[k] = v
 		}
 	}
